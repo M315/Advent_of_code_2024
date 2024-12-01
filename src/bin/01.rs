@@ -1,52 +1,55 @@
 use std::collections::HashMap;
 advent_of_code::solution!(1);
 
-fn parse(input: &str) -> Vec<Vec<u32>> {
-    
+fn parse(input: &str) -> Vec<(u32, u32)> {
     input.lines()
-         .map(|line| line.chars().filter(|c| c.is_digit(10)).map(|d| d.to_digit(10).unwrap()).collect::<Vec<u32>>())
+         .map(|line| line.split_once(' ').unwrap())
+         .map(|(l, r)| (l.trim().parse::<u32>().unwrap(), r.trim().parse::<u32>().unwrap()))
          .collect()
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    parse(input).into_iter()
-                .fold(Some(0), |acc, v| Some(acc.unwrap() + v[0] * 10 + v.last().unwrap()))
+    let initial_list = parse(input);
+    let mut left: Vec<u32> = initial_list.clone().into_iter().map(|(n, _)| n).collect();
+    let mut right: Vec<u32> = initial_list.into_iter().map(|(_, n)| n).collect();
+
+    left.sort_unstable();
+    right.sort_unstable();
+
+    Some(left.into_iter()
+        .zip(right.into_iter())
+        .map(|(l, r)| u32::abs_diff(l, r))
+        .sum())
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let numbers: HashMap<&str, &str> = HashMap::from([
-        ("one", "o1ne"),
-        ("two", "t2wo"),
-        ("three", "t3hree"),
-        ("four", "f4our"),
-        ("five", "f5ive"),
-        ("six", "s6ix"),
-        ("seven", "s7even"),
-        ("eight", "e8ight"),
-        ("nine", "n9ine"),
-    ]);
-    let mut s: String = String::from(input);
-    for (key, val) in numbers.into_iter() {
-        s = s.replace(key, val);
-    }
+    let initial_list = parse(input);
+    let right: HashMap<u32, u32> = initial_list.clone()
+        .into_iter()
+        .map(|(_, n)| n)
+        .fold(HashMap::<u32, u32>::new(), |mut acc, n| {
+            acc.entry(n).and_modify(|count| *count += 1).or_insert(1);
+            acc
+        });
 
-    parse(s.as_str()).into_iter()
-                .fold(Some(0), |acc, v| Some(acc.unwrap() + v[0] * 10 + v.last().unwrap()))
+    Some(initial_list.into_iter()
+        .map(|(n, _)| n * *right.get(&n).unwrap_or(&0))
+        .sum())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_part_one() {
-    //     let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-    //     assert_eq!(result, Some(142));
-    // }
+    #[test]
+    fn test_part_one() {
+        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
+        assert_eq!(result, Some(11));
+    }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(281));
+        assert_eq!(result, Some(31));
     }
 }
